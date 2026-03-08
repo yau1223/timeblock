@@ -19,7 +19,7 @@ async def validate_config():
 # 設定 CORS 中介層，明確限制允許的來源、方法與標頭以降低 CSRF 風險
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

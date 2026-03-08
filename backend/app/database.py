@@ -10,8 +10,8 @@ class Base(DeclarativeBase):
     pass
 
 
-# 建立非同步資料庫引擎（使用 asyncpg 驅動）
-engine = create_async_engine(settings.database_url, echo=False)
+# 建立非同步資料庫引擎（使用 asyncpg 驅動，支援 Render 的 postgresql:// 格式自動轉換）
+engine = create_async_engine(settings.async_database_url, echo=False)
 # 建立非同步 Session 工廠
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
