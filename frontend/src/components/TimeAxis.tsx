@@ -40,7 +40,8 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
 
   /** 新增時間塊（預設 1 小時長度） */
   const handleCreate = async () => {
-    const startDate = new Date(`${date}T${String(clickedHour).padStart(2, '0')}:00:00Z`)
+    // 不加 Z，讓 JS 以本地時區（台灣 UTC+8）解析，toISOString() 再轉成 UTC 送後端
+    const startDate = new Date(`${date}T${String(clickedHour).padStart(2, '0')}:00:00`)
     const endDate = new Date(startDate.getTime() + 3600000)
 
     await createBlock({

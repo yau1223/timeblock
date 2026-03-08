@@ -15,9 +15,12 @@ export interface TimeBlock {
   recur_rule?: string
 }
 
-/** 取得指定日期的所有時間塊（YYYY-MM-DD 格式） */
+/** 取得指定日期的所有時間塊（YYYY-MM-DD 格式）
+ *  以本地時間午夜為邊界轉成 UTC，避免台灣 UTC+8 跨日問題 */
 export async function getBlocksByDate(date: string): Promise<TimeBlock[]> {
-  const res = await apiClient.get('/api/blocks/', { params: { date } })
+  const start = new Date(`${date}T00:00:00`).toISOString()
+  const end = new Date(`${date}T23:59:59`).toISOString()
+  const res = await apiClient.get('/api/blocks/', { params: { start, end } })
   return res.data
 }
 
