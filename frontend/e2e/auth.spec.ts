@@ -4,6 +4,9 @@ import { test, expect } from '@playwright/test'
 // 產生唯一 email 避免測試間衝突
 const uniqueEmail = () => `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com`
 
+// Render 免費方案冷啟動需要 50-60 秒，所有涉及 API 的測試需要較長 timeout
+const API_TIMEOUT = 60000
+
 test.describe('頁面載入', () => {
   test('首頁應正確載入並重新導向至登入頁', async ({ page }) => {
     await page.goto('/')
@@ -45,8 +48,8 @@ test.describe('使用者註冊', () => {
     await page.fill('input[type="password"]', 'password123')
     await page.click('button[type="submit"]')
 
-    // 成功後跳轉至日視圖
-    await expect(page).toHaveURL(/\/day/, { timeout: 15000 })
+    // 成功後跳轉至日視圖（Render 冷啟動最多等 60s）
+    await expect(page).toHaveURL(/\/day/, { timeout: API_TIMEOUT })
     // 日視圖應顯示導覽列
     await expect(page.locator('a[href="/habits"]')).toBeVisible()
   })
