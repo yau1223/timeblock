@@ -28,13 +28,14 @@ async def list_blocks(
         # 取得指定日期全天（00:00:00 ~ 23:59:59 UTC）的時間塊
         day_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
         day_end = datetime.fromisoformat(f"{date}T23:59:59+00:00")
+        # 使用重疊區間條件，確保跨日時間塊也能正確顯示
         query = query.where(
-            and_(TimeBlock.start_time >= day_start, TimeBlock.start_time <= day_end)
+            and_(TimeBlock.start_time <= day_end, TimeBlock.end_time >= day_start)
         )
     elif start and end:
-        # 取得指定範圍內的時間塊（用於週/月視圖）
+        # 重疊區間查詢：start_time 在範圍內，或完全包覆查詢範圍
         query = query.where(
-            and_(TimeBlock.start_time >= start, TimeBlock.start_time <= end)
+            and_(TimeBlock.start_time <= end, TimeBlock.end_time >= start)
         )
 
     query = query.order_by(TimeBlock.start_time)
@@ -77,6 +78,15 @@ async def update_block(
     # 僅更新請求中明確提供的欄位（exclude_unset=True 過濾未提供欄位）
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(block, field, value)
+
+    # 驗證更新後的時間順序（考慮部分更新情境）
+    final_start = body.start_time if body.start_time is not None else block.start_time
+    final_end = body.end_time if body.end_time is not None else block.end_time
+    if final_end <= final_start:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="結束時間必須晚於開始時間",
+        )
 
     await db.commit()
     await db.refresh(block)

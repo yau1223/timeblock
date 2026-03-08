@@ -47,6 +47,7 @@ class TimeBlockResponse(BaseModel):
     start_time: datetime
     end_time: datetime
     is_recurring: bool
+    recur_rule: str | None
     habit_id: uuid.UUID | None
 
     model_config = {"from_attributes": True}
