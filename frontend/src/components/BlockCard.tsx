@@ -1,6 +1,8 @@
 // 時間塊卡片元件，支援拖曳（dnd-kit）
 import { useDraggable } from '@dnd-kit/core'
 import type { TimeBlock } from '../api/blocks'
+import { updateBlock } from '../api/blocks'
+import FocusTimer from './FocusTimer'
 
 // 每小時對應的像素高度
 export const HOUR_HEIGHT = 64
@@ -22,11 +24,18 @@ interface BlockCardProps {
   topPx: number       // 距時間軸頂部的像素
   heightPx: number    // 時間塊高度像素
   onDelete: (id: string) => void
+  onRefresh?: () => void  // 完成後刷新資料的回呼（可選）
 }
 
 /** 可拖曳的時間塊卡片，點擊 × 刪除 */
-export default function BlockCard({ block, topPx, heightPx, onDelete }: BlockCardProps) {
+export default function BlockCard({ block, topPx, heightPx, onDelete, onRefresh }: BlockCardProps) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: block.id })
+
+  /** 標記時間塊為已完成，更新 completed_at */
+  const handleComplete = async () => {
+    await updateBlock(block.id, { completed_at: new Date().toISOString() })
+    onRefresh?.()
+  }
 
   // 拖曳時套用 transform 位移
   const style = transform
@@ -49,6 +58,12 @@ export default function BlockCard({ block, topPx, heightPx, onDelete }: BlockCar
     >
       {/* 時間塊標題 */}
       <div className="font-semibold truncate pr-4">{block.title}</div>
+      {/* 高度足夠時顯示專注計時器或完成標記 */}
+      {heightPx > 48 && (
+        block.completed_at
+          ? <span className="text-xs text-white/70">✓ 已完成</span>
+          : <FocusTimer endTime={block.end_time} onComplete={handleComplete} />
+      )}
       {/* 刪除按鈕 */}
       <button
         onClick={(e) => {

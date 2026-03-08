@@ -135,6 +135,7 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
             topPx={timeToTopPx(block.start_time)}
             heightPx={durationToHeightPx(block.start_time, block.end_time)}
             onDelete={handleDelete}
+            onRefresh={onRefresh}
           />
         ))}
 
