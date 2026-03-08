@@ -49,5 +49,7 @@ class TimeBlockResponse(BaseModel):
     is_recurring: bool
     recur_rule: str | None
     habit_id: uuid.UUID | None
+    # 完成時間（None 表示尚未完成）
+    completed_at: datetime | None = None
 
     model_config = {"from_attributes": True}

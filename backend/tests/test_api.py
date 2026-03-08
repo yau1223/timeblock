@@ -439,6 +439,27 @@ async def test_get_streak_nonexistent_habit(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_block_has_completed_at_field(client: AsyncClient):
+    """新增時間塊後，回應資料應包含 completed_at 欄位且預設為 None"""
+    # 先建立使用者並取得 token
+    reg = await client.post("/api/auth/register", json={
+        "email": "completed_at@example.com", "password": "pw123", "name": "使用者",
+    })
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = await client.post("/api/blocks/", json={
+        "title": "測試",
+        "start_time": "2026-03-08T09:00:00Z",
+        "end_time": "2026-03-08T10:00:00Z",
+        "color": "#6366f1",
+    }, headers=headers)
+    assert res.status_code == 201
+    assert "completed_at" in res.json()
+    assert res.json()["completed_at"] is None
+
+
+@pytest.mark.asyncio
 async def test_blocks_require_auth(client: AsyncClient):
     """未認證存取 blocks API 應回傳 401 (FastAPI HTTPBearer 預設行為)"""
     response = await client.get("/api/blocks/")

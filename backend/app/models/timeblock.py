@@ -32,6 +32,8 @@ class TimeBlock(Base):
     recur_rule: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # 若此塊由習慣自動產生，記錄來源習慣的 ID
     habit_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("habits.id"), nullable=True)
+    # 時間塊完成時間（None 表示未完成）
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # 所屬使用者關聯
     user: Mapped["User"] = relationship(back_populates="time_blocks")
