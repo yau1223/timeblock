@@ -35,6 +35,8 @@ class TimeBlockUpdate(BaseModel):
     end_time: datetime | None = None
     is_recurring: bool | None = None
     recur_rule: str | None = None
+    # 完成時間：設定後表示該時間塊已完成，設為 None 可取消完成狀態
+    completed_at: datetime | None = None
 
 
 class TimeBlockResponse(BaseModel):

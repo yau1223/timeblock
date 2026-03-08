@@ -460,6 +460,64 @@ async def test_block_has_completed_at_field(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_mark_block_completed(client: AsyncClient):
+    """已登入使用者可以透過 PATCH 設定 completed_at 標記時間塊為完成"""
+    reg = await client.post("/api/auth/register", json={
+        "email": "markdone@example.com", "password": "pw123", "name": "使用者",
+    })
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 建立時間塊
+    create_res = await client.post("/api/blocks/", json={
+        "title": "測試完成",
+        "start_time": "2026-03-08T09:00:00Z",
+        "end_time": "2026-03-08T10:00:00Z",
+        "color": "#6366f1",
+    }, headers=headers)
+    assert create_res.status_code == 201
+    block_id = create_res.json()["id"]
+
+    # 標記為完成
+    patch_res = await client.patch(f"/api/blocks/{block_id}", json={
+        "completed_at": "2026-03-08T09:45:00Z",
+    }, headers=headers)
+    assert patch_res.status_code == 200
+    assert patch_res.json()["completed_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_unmark_block_completed(client: AsyncClient):
+    """已登入使用者可以將 completed_at 設為 None 取消完成狀態"""
+    reg = await client.post("/api/auth/register", json={
+        "email": "undone@example.com", "password": "pw123", "name": "使用者",
+    })
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 建立時間塊
+    create_res = await client.post("/api/blocks/", json={
+        "title": "取消完成測試",
+        "start_time": "2026-03-08T09:00:00Z",
+        "end_time": "2026-03-08T10:00:00Z",
+        "color": "#6366f1",
+    }, headers=headers)
+    block_id = create_res.json()["id"]
+
+    # 先標記完成
+    await client.patch(f"/api/blocks/{block_id}", json={
+        "completed_at": "2026-03-08T09:45:00Z",
+    }, headers=headers)
+
+    # 再取消完成（傳 null）
+    patch_res = await client.patch(f"/api/blocks/{block_id}", json={
+        "completed_at": None,
+    }, headers=headers)
+    assert patch_res.status_code == 200
+    assert patch_res.json()["completed_at"] is None
+
+
+@pytest.mark.asyncio
 async def test_blocks_require_auth(client: AsyncClient):
     """未認證存取 blocks API 應回傳 401 (FastAPI HTTPBearer 預設行為)"""
     response = await client.get("/api/blocks/")
