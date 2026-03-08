@@ -13,6 +13,7 @@ export interface TimeBlock {
   habit_id?: string
   is_recurring: boolean
   recur_rule?: string
+  completed_at?: string | null
 }
 
 /** 取得指定日期的所有時間塊（YYYY-MM-DD 格式）
