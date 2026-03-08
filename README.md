@@ -28,6 +28,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 cp ../.env.example ../.env
+# 重要：請編輯 .env，修改 SECRET_KEY 為隨機長字串，並設定其他必要密碼
+nano ../.env
 uvicorn app.main:app --reload --port 8000
 ```
 

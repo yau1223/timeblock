@@ -8,3 +8,10 @@ dist/
 *.egg-info/
 .coverage
 htmlcov/
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+*.sqlite
+*.db
