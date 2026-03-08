@@ -20,7 +20,7 @@ async def list_templates(
 ):
     """取得目前使用者的所有範本，依建立時間排序"""
     result = await db.execute(
-        select(Template).where(Template.user_id == current_user.id)
+        select(Template).where(Template.user_id == current_user.id).order_by(Template.created_at)
     )
     return result.scalars().all()
 
