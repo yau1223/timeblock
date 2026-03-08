@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import BlockCard, { HOUR_HEIGHT, timeToTopPx, durationToHeightPx } from './BlockCard'
+import ColorPicker from './ColorPicker'
 import { createBlock, updateBlock, deleteBlock } from '../api/blocks'
 import type { TimeBlock } from '../api/blocks'
 
@@ -22,6 +23,8 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
   const [newTitle, setNewTitle] = useState('')
   const [clickedHour, setClickedHour] = useState(9)
   const [clickedEndHour, setClickedEndHour] = useState(10)
+  // 目前選取的時間塊顏色，預設為靛藍色
+  const [selectedColor, setSelectedColor] = useState('#6366f1')
 
   // 拖曳建立相關狀態
   const [dragStart, setDragStart] = useState<number | null>(null)
@@ -58,7 +61,7 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
   const handlePointerUp = () => {
     if (dragStart === null) return
     const start = Math.min(dragStart, dragEnd ?? dragStart)
-    const end = Math.max(dragStart, dragEnd ?? dragStart) + 1
+    const end = Math.min(24, Math.max(dragStart, dragEnd ?? dragStart) + 1)
     setClickedHour(start)
     setClickedEndHour(end)
     setShowModal(true)
@@ -79,11 +82,12 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
       title: newTitle.trim() || '新時間塊',
       start_time: startDate.toISOString(),
       end_time: finalEnd.toISOString(),
-      color: '#6366f1',
+      color: selectedColor,
     })
 
     setShowModal(false)
     setNewTitle('')
+    setSelectedColor('#6366f1')
     onRefresh()
   }
 
@@ -162,7 +166,7 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
       {showModal && (
         <div
           className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
-          onClick={() => setShowModal(false)}
+          onClick={() => { setShowModal(false); setSelectedColor('#6366f1') }}
         >
           <div
             className="bg-white rounded-xl p-6 w-80 shadow-lg"
@@ -180,6 +184,10 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               autoFocus
             />
+            <div className="mb-4">
+              <p className="text-xs text-gray-500 mb-2">顏色</p>
+              <ColorPicker value={selectedColor} onChange={setSelectedColor} />
+            </div>
             <div className="flex gap-2">
               <button
                 onClick={handleCreate}
@@ -188,7 +196,7 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
                 新增
               </button>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setSelectedColor('#6366f1') }}
                 className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
               >
                 取消
