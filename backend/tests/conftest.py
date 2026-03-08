@@ -36,3 +36,16 @@ async def client(db_session: AsyncSession):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def auth_headers(client: AsyncClient) -> dict:
+    """建立測試使用者並回傳 Bearer token 標頭"""
+    # 註冊測試使用者
+    res = await client.post("/api/auth/register", json={
+        "email": "fixture_user@example.com",
+        "password": "testpassword123",
+        "name": "Fixture 使用者",
+    })
+    token = res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

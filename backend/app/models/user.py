@@ -29,3 +29,5 @@ class User(Base):
     time_blocks: Mapped[list["TimeBlock"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     habits: Mapped[list["Habit"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     categories: Mapped[list["Category"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    # 範本關聯，使用者刪除時一併刪除所有範本
+    templates: Mapped[list["Template"]] = relationship(back_populates="user", cascade="all, delete-orphan")
