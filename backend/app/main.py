@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
+from app.routers import auth
 
 # 建立 FastAPI 應用程式實例
 app = FastAPI(title="TimeBlock API", version="0.1.0")
@@ -14,6 +15,10 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+
+# 掛載認證路由
+app.include_router(auth.router)
 
 
 # 健康檢查路由，供容器 orchestrator 或監控工具確認服務存活狀態
