@@ -6,6 +6,7 @@ import DayView from './pages/DayView'
 import WeekView from './pages/WeekView'
 import MonthView from './pages/MonthView'
 import HabitsPage from './pages/HabitsPage'
+import TemplatesPage from './pages/TemplatesPage'
 
 // 需要登入才能存取的路由守衛
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/week" element={<ProtectedRoute><WeekView /></ProtectedRoute>} />
         <Route path="/month" element={<ProtectedRoute><MonthView /></ProtectedRoute>} />
         <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
+        <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/day" replace />} />
       </Routes>
     </BrowserRouter>
