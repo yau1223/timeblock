@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { getHabits, createHabit, toggleHabitLog, type Habit } from '../api/habits'
 
-const today = format(new Date(), 'yyyy-MM-dd')
-
 /** 習慣追蹤頁面：列出今日習慣並支援打勾完成 */
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([])
@@ -15,20 +13,30 @@ export default function HabitsPage() {
   const [newTitle, setNewTitle] = useState('')
   const [loading, setLoading] = useState(false)
 
-  /** 載入習慣列表 */
+  /** 載入習慣列表，含錯誤處理 */
   const refresh = async () => {
-    const data = await getHabits()
-    setHabits(data)
+    try {
+      const data = await getHabits()
+      setHabits(data)
+    } catch {
+      console.error('載入習慣失敗')
+    }
   }
 
   useEffect(() => {
     refresh()
   }, [])
 
-  /** 切換習慣完成狀態並更新本地狀態 */
+  /** 切換習慣完成狀態並更新本地狀態，動態取得今日日期避免跨午夜問題 */
   const handleToggle = async (habit: Habit) => {
-    const result = await toggleHabitLog(habit.id, today)
-    setCompletedMap((prev) => ({ ...prev, [habit.id]: result.completed }))
+    const today = format(new Date(), 'yyyy-MM-dd')
+    try {
+      const result = await toggleHabitLog(habit.id, today)
+      setCompletedMap((prev) => ({ ...prev, [habit.id]: result.completed }))
+    } catch {
+      // 打勾失敗時不更新本地狀態，保持與後端一致
+      console.error('習慣打勾失敗')
+    }
   }
 
   /** 新增習慣 */

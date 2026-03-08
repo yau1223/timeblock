@@ -1,6 +1,6 @@
 # 時間塊 CRUD 路由：支援依日期或範圍查詢、新增、更新、刪除
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, date as date_type
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/blocks", tags=["blocks"])
 
 @router.get("/", response_model=list[TimeBlockResponse])
 async def list_blocks(
-    date: str | None = None,
+    date: date_type | None = None,
     start: datetime | None = None,
     end: datetime | None = None,
     current_user: User = Depends(get_current_user),
@@ -26,8 +26,8 @@ async def list_blocks(
 
     if date:
         # 取得指定日期全天（00:00:00 ~ 23:59:59 UTC）的時間塊
-        day_start = datetime.fromisoformat(f"{date}T00:00:00+00:00")
-        day_end = datetime.fromisoformat(f"{date}T23:59:59+00:00")
+        day_start = datetime(date.year, date.month, date.day, 0, 0, 0, tzinfo=timezone.utc)
+        day_end = datetime(date.year, date.month, date.day, 23, 59, 59, tzinfo=timezone.utc)
         # 使用重疊區間條件，確保跨日時間塊也能正確顯示
         query = query.where(
             and_(TimeBlock.start_time <= day_end, TimeBlock.end_time >= day_start)

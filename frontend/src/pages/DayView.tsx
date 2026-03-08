@@ -17,13 +17,24 @@ export default function DayView() {
 
   const [currentDate, setCurrentDate] = useState(initialDate)
   const [blocks, setBlocks] = useState<TimeBlock[]>([])
+  // 載入狀態與錯誤訊息
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const dateStr = format(currentDate, 'yyyy-MM-dd')
 
-  /** 重新載入當日時間塊 */
+  /** 重新載入當日時間塊，含錯誤處理 */
   const refresh = useCallback(async () => {
-    const data = await getBlocksByDate(dateStr)
-    setBlocks(data)
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getBlocksByDate(dateStr)
+      setBlocks(data)
+    } catch {
+      setError('載入失敗，請重試')
+    } finally {
+      setLoading(false)
+    }
   }, [dateStr])
 
   useEffect(() => {
@@ -71,7 +82,9 @@ export default function DayView() {
         className="overflow-y-auto border border-gray-100 rounded-xl bg-white shadow-sm"
         style={{ height: '70vh' }}
       >
-        <TimeAxis date={dateStr} blocks={blocks} onRefresh={refresh} />
+        {loading && <div className="flex items-center justify-center h-full text-gray-400">載入中...</div>}
+        {error && <div className="flex items-center justify-center h-full text-red-500">{error}</div>}
+        {!loading && !error && <TimeAxis date={dateStr} blocks={blocks} onRefresh={refresh} />}
       </div>
     </div>
   )
