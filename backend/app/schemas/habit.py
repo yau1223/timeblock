@@ -22,7 +22,6 @@ class HabitUpdate(BaseModel):
     frequency: str | None = None
     target_time: time | None = None
     duration: int | None = None
-    is_active: bool | None = None
 
 
 class HabitResponse(BaseModel):

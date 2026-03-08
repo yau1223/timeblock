@@ -12,12 +12,15 @@ from app.schemas.habit import HabitCreate, HabitUpdate, HabitResponse, HabitLogR
 
 router = APIRouter(prefix="/api/habits", tags=["habits"])
 
+# streak 計算安全上限，防止無限迴圈
+MAX_STREAK_DAYS = 3650
+
 
 async def _calc_streak(db: AsyncSession, habit_id: uuid.UUID, user_id: uuid.UUID) -> int:
     """從今天往前計算習慣的連續完成天數（streak），遇到未完成日即停止"""
     streak = 0
     check_date = date.today()
-    while True:
+    while streak < MAX_STREAK_DAYS:
         result = await db.execute(
             select(HabitLog).where(
                 and_(
@@ -123,7 +126,7 @@ async def delete_habit(
 @router.post("/{habit_id}/logs/{log_date}", response_model=HabitLogResponse)
 async def toggle_habit_log(
     habit_id: uuid.UUID,
-    log_date: str,  # YYYY-MM-DD 格式
+    log_date: date,  # FastAPI 自動驗證 YYYY-MM-DD 格式
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -141,7 +144,7 @@ async def toggle_habit_log(
             and_(
                 HabitLog.habit_id == habit_id,
                 HabitLog.user_id == current_user.id,
-                HabitLog.date == date.fromisoformat(log_date),
+                HabitLog.date == log_date,
             )
         )
     )
@@ -155,14 +158,14 @@ async def toggle_habit_log(
         log = HabitLog(
             habit_id=habit_id,
             user_id=current_user.id,
-            date=date.fromisoformat(log_date),
+            date=log_date,
             completed=True,
         )
         db.add(log)
 
     await db.commit()
     await db.refresh(log)
-    return HabitLogResponse(date=log_date, completed=log.completed)
+    return HabitLogResponse(date=log_date.isoformat(), completed=log.completed)
 
 
 @router.get("/{habit_id}/streak", response_model=int)
