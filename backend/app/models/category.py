@@ -22,3 +22,5 @@ class Category(Base):
 
     # 所屬使用者關聯
     user: Mapped["User"] = relationship(back_populates="categories")
+    # 此分類下的所有時間塊（雙向關聯）
+    time_blocks: Mapped[list["TimeBlock"]] = relationship(back_populates="category")

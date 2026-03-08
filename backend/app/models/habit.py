@@ -1,7 +1,8 @@
 # 習慣定義與每日完成記錄 ORM 模型
 import uuid
 from datetime import time
-from sqlalchemy import String, Boolean, Integer, Time, ForeignKey
+from datetime import date as date_type
+from sqlalchemy import String, Boolean, Integer, Time, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -38,6 +39,8 @@ class Habit(Base):
 class HabitLog(Base):
     """習慣每日完成記錄，用於計算連續天數（streak）"""
     __tablename__ = "habit_logs"
+    # 確保同一個習慣每天只能有一筆記錄
+    __table_args__ = (UniqueConstraint("habit_id", "date", name="uq_habit_log_habit_date"),)
 
     # 主鍵
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -45,8 +48,8 @@ class HabitLog(Base):
     habit_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("habits.id"), nullable=False)
     # 所屬使用者（冗餘欄位，加速按使用者查詢）
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    # 記錄日期（YYYY-MM-DD 格式字串，避免時區換算問題）
-    date: Mapped[str] = mapped_column(String(10), nullable=False)
+    # 記錄日期（使用 SQL Date 型別，確保資料庫層正確儲存）
+    date: Mapped[date_type] = mapped_column(Date, nullable=False)
     # 是否已完成
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
 

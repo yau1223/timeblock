@@ -35,5 +35,5 @@ class TimeBlock(Base):
 
     # 所屬使用者關聯
     user: Mapped["User"] = relationship(back_populates="time_blocks")
-    # 所屬分類關聯（可為空）
-    category: Mapped["Category | None"] = relationship()
+    # 所屬分類關聯（雙向，可為空）
+    category: Mapped["Category | None"] = relationship(back_populates="time_blocks")

@@ -1,4 +1,5 @@
 # 資料庫連線管理模組，提供非同步 SQLAlchemy 引擎與 Session
+from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
@@ -15,7 +16,7 @@ engine = create_async_engine(settings.database_url, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI 依賴注入：提供資料庫 session，請求結束後自動關閉"""
     async with AsyncSessionLocal() as session:
         yield session
