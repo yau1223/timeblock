@@ -1,4 +1,4 @@
-// 24 小時時間軸元件，支援點擊新增與拖曳調整時間塊
+// 24 小時時間軸元件，支援長按拖曳新增時間塊與拖曳調整時間塊
 import { useState } from 'react'
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
@@ -21,33 +21,64 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
   const [showModal, setShowModal] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [clickedHour, setClickedHour] = useState(9)
+  const [clickedEndHour, setClickedEndHour] = useState(10)
+
+  // 拖曳建立相關狀態
+  const [dragStart, setDragStart] = useState<number | null>(null)
+  const [dragEnd, setDragEnd] = useState<number | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   // 拖曳感測器：需移動 8px 才觸發拖曳（防止誤觸）
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  /** 點擊時間軸空白處：計算點擊的小時並顯示新增 modal */
-  const handleAxisClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  /** 按下滑鼠：記錄起始小時，準備長按拖曳選取範圍 */
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // 若點擊的是時間塊本身則忽略
-    if ((e.target as HTMLElement).closest('[data-dnd-kit]')) return
+    if ((e.target as HTMLElement).closest('[data-block]')) return
     const rect = e.currentTarget.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const hour = Math.max(0, Math.min(23, Math.floor(y / HOUR_HEIGHT)))
-    setClickedHour(hour)
-    setShowModal(true)
+    const hour = Math.max(0, Math.min(23, Math.floor((e.clientY - rect.top) / HOUR_HEIGHT)))
+    setDragStart(hour)
+    setDragEnd(hour)
+    setIsDragging(false)
+    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
-  /** 新增時間塊（預設 1 小時長度） */
+  /** 移動滑鼠：更新拖曳終點小時，顯示預覽 ghost block */
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStart === null) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const hour = Math.min(23, Math.max(0, Math.floor((e.clientY - rect.top) / HOUR_HEIGHT)))
+    setIsDragging(true)
+    setDragEnd(hour)
+  }
+
+  /** 放開滑鼠：計算選取範圍並顯示新增 modal */
+  const handlePointerUp = () => {
+    if (dragStart === null) return
+    const start = Math.min(dragStart, dragEnd ?? dragStart)
+    const end = Math.max(dragStart, dragEnd ?? dragStart) + 1
+    setClickedHour(start)
+    setClickedEndHour(end)
+    setShowModal(true)
+    setDragStart(null)
+    setDragEnd(null)
+    setIsDragging(false)
+  }
+
+  /** 新增時間塊，使用拖曳選取的時間範圍 */
   const handleCreate = async () => {
     // 不加 Z，讓 JS 以本地時區（台灣 UTC+8）解析，toISOString() 再轉成 UTC 送後端
     const startDate = new Date(`${date}T${String(clickedHour).padStart(2, '0')}:00:00`)
-    const endDate = new Date(startDate.getTime() + 3600000)
+    const endDate = new Date(`${date}T${String(clickedEndHour).padStart(2, '0')}:00:00`)
+    // 若開始 = 結束（誤觸，單格），加 1 小時
+    const finalEnd = endDate <= startDate ? new Date(startDate.getTime() + 3600000) : endDate
 
     await createBlock({
       title: newTitle.trim() || '新時間塊',
       start_time: startDate.toISOString(),
-      end_time: endDate.toISOString(),
+      end_time: finalEnd.toISOString(),
       color: '#6366f1',
     })
 
@@ -82,11 +113,13 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
   return (
     <>
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        {/* 時間軸容器 */}
+        {/* 時間軸容器：使用 pointer events 取代 onClick 以支援長按拖曳選取 */}
         <div
           className="relative select-none"
           style={{ height: HOUR_HEIGHT * 24 }}
-          onClick={handleAxisClick}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
         >
           {/* 小時格線與標籤 */}
           {HOURS.map((h) => (
@@ -111,6 +144,17 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
               onDelete={handleDelete}
             />
           ))}
+
+          {/* 拖曳預覽 ghost block：顯示目前選取的時間範圍 */}
+          {isDragging && dragStart !== null && dragEnd !== null && (
+            <div
+              className="absolute left-14 right-2 rounded-lg bg-indigo-300/60 border-2 border-dashed border-indigo-500 pointer-events-none z-20"
+              style={{
+                top: Math.min(dragStart, dragEnd) * HOUR_HEIGHT,
+                height: (Math.abs(dragEnd - dragStart) + 1) * HOUR_HEIGHT,
+              }}
+            />
+          )}
         </div>
       </DndContext>
 
@@ -126,7 +170,7 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
           >
             <h2 className="font-bold text-lg mb-1">新增時間塊</h2>
             <p className="text-sm text-gray-500 mb-4">
-              {String(clickedHour).padStart(2, '0')}:00 — {String(clickedHour + 1).padStart(2, '0')}:00
+              {String(clickedHour).padStart(2, '0')}:00 — {String(clickedEndHour).padStart(2, '0')}:00
             </p>
             <input
               className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"

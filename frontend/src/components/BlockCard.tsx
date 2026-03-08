@@ -36,6 +36,7 @@ export default function BlockCard({ block, topPx, heightPx, onDelete }: BlockCar
   return (
     <div
       ref={setNodeRef}
+      data-block="true"
       style={{
         top: topPx,
         height: heightPx,
