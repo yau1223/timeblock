@@ -18,16 +18,20 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """從 Bearer token 解析並查詢目前使用者，供路由作為依賴注入使用"""
+    # 統一用 401 回應所有認證失敗，避免洩露資訊
+    auth_error = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token 無效或已過期",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     try:
         user_id = decode_token(credentials.credentials)
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token 無效或已過期",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+        user_uuid = uuid.UUID(user_id)  # ValueError 若 sub 非合法 UUID
+    except (JWTError, ValueError):
+        raise auth_error
+    result = await db.execute(select(User).where(User.id == user_uuid))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="使用者不存在")
+        # 使用者已刪除但 token 仍有效，統一回傳 401
+        raise auth_error
     return user

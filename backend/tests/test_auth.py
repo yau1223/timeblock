@@ -35,3 +35,16 @@ def test_decode_invalid_token_raises_error():
     """無效 token 解碼應拋出 JWTError"""
     with pytest.raises(JWTError):
         decode_token("this.is.not.a.valid.jwt")
+
+
+def test_decode_token_with_invalid_sub_format():
+    """decode_token 對非 UUID 格式的 sub 也應成功解碼（UUID 驗證在 dependencies 層進行）"""
+    # 此測試確認 decode_token 本身不驗證 UUID 格式，職責分離
+    from jose import jwt
+    from app.config import settings
+    import time
+    payload = {"sub": "not-a-uuid", "exp": int(time.time()) + 3600}
+    token = jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    # decode_token 應能正常解碼，回傳非 UUID 字串
+    result = decode_token(token)
+    assert result == "not-a-uuid"

@@ -4,6 +4,7 @@ from jose import jwt, JWTError
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.config import settings
 
@@ -41,7 +42,7 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
 
 
 async def create_user(db: AsyncSession, email: str, password: str, name: str) -> User:
-    """建立新的本地帳號使用者，密碼自動雜湊後儲存"""
+    """建立新的本地帳號使用者，密碼自動雜湊後儲存；email 重複時拋出 ValueError"""
     user = User(
         email=email,
         password_hash=hash_password(password),
@@ -49,6 +50,11 @@ async def create_user(db: AsyncSession, email: str, password: str, name: str) ->
         auth_provider="local",
     )
     db.add(user)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # email 唯一約束衝突（高並發 race condition 保護）
+        await db.rollback()
+        raise ValueError(f"Email {email} 已被使用")
     await db.refresh(user)
     return user
