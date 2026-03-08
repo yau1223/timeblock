@@ -22,9 +22,15 @@
 
 ## 功能
 
-- 時間塊排程：日/週/月視圖，視覺化 24h 時間軸
-- 習慣追蹤：新增習慣、每日打卡、連續天數統計
-- 使用者認證：Email 註冊 / 登入、OAuth2 社群登入
+- **時間塊排程**：日/週/月視圖，視覺化 24h 時間軸
+- **色塊**：10 色預設調色盤，每個時間塊可選不同顏色
+- **長按拖曳建立**：在時間軸上長按拖曳選取範圍，一次建立多小時時間塊
+- **習慣拖入時間軸**：從側邊欄將習慣拖曳至時間軸，直接建立對應時間塊
+- **專注計時器**：每個時間塊內建倒數計時器，完成後標記 completed_at
+- **每日進度條**：即時顯示已排/已完成/空閒時數三色進度條
+- **排程範本**：將今日排程另存為範本，套用至任意日期
+- **習慣追蹤**：新增習慣、每日打卡、連續天數統計
+- **使用者認證**：Email 註冊 / 登入、OAuth2 社群登入
 
 ## 本地啟動
 
@@ -111,11 +117,13 @@ npx playwright test
 npx playwright show-report
 ```
 
-E2E 覆蓋流程（19 個測試）：
+E2E 覆蓋流程（26 個測試）：
 - 頁面載入與路由保護
 - 使用者註冊 / 登入
-- 時間塊新增與視圖切換
+- 時間塊新增與視圖切換（含色塊選色）
 - 習慣新增與打卡
+- 並排佈局（習慣側邊欄 + 每日進度條）
+- 範本頁面（標題、空狀態）
 
 ## 專案結構
 
@@ -136,11 +144,11 @@ timeblock/
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # UI 元件
-│   │   ├── pages/          # 頁面元件
+│   │   ├── components/     # UI 元件（BlockCard, ColorPicker, DailyProgress, FocusTimer, HabitSidebar, TimeAxis...）
+│   │   ├── pages/          # 頁面元件（DayView, WeekView, MonthView, HabitsPage, TemplatesPage）
 │   │   ├── stores/         # Zustand 狀態管理
-│   │   └── api/            # API 客戶端
-│   ├── e2e/                # Playwright E2E 測試
+│   │   └── api/            # API 客戶端（blocks, habits, templates）
+│   ├── e2e/                # Playwright E2E 測試（26 個）
 │   └── vercel.json         # Vercel 部署設定
 └── docker-compose.yml
 ```
