@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth, blocks
+from app.routers import auth, blocks, habits
 
 # 建立 FastAPI 應用程式實例
 app = FastAPI(title="TimeBlock API", version="0.1.0")
@@ -20,6 +20,7 @@ app.add_middleware(
 # 掛載認證路由
 app.include_router(auth.router)
 app.include_router(blocks.router)
+app.include_router(habits.router)
 
 
 # 健康檢查路由，供容器 orchestrator 或監控工具確認服務存活狀態
