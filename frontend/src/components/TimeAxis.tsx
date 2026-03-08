@@ -1,10 +1,10 @@
 // 24 小時時間軸元件，支援長按拖曳新增時間塊與拖曳調整時間塊
+// DndContext 已提升至 DayView 層級，此元件只負責顯示與本地互動
 import { useState } from 'react'
-import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import type { DragEndEvent } from '@dnd-kit/core'
+import { useDroppable } from '@dnd-kit/core'
 import BlockCard, { HOUR_HEIGHT, timeToTopPx, durationToHeightPx } from './BlockCard'
 import ColorPicker from './ColorPicker'
-import { createBlock, updateBlock, deleteBlock } from '../api/blocks'
+import { createBlock, deleteBlock } from '../api/blocks'
 import type { TimeBlock } from '../api/blocks'
 
 // 24 個小時標籤陣列
@@ -14,6 +14,26 @@ interface TimeAxisProps {
   date: string           // YYYY-MM-DD
   blocks: TimeBlock[]
   onRefresh: () => void  // 資料更新後的回呼
+}
+
+/** 單一小時格，含 droppable 支援習慣拖入 */
+function HourSlot({ hour }: { hour: number }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `hour-${hour}`,
+    data: { hour },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`absolute w-full border-t border-gray-100 transition-colors ${isOver ? 'bg-indigo-50' : ''}`}
+      style={{ top: hour * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+    >
+      <span className="absolute left-2 -top-2 text-xs text-gray-400 w-10 text-right">
+        {String(hour).padStart(2, '0')}:00
+      </span>
+    </div>
+  )
 }
 
 /** 24 小時時間軸，包含格線、時間塊、新增 modal */
@@ -30,11 +50,6 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
   const [dragStart, setDragStart] = useState<number | null>(null)
   const [dragEnd, setDragEnd] = useState<number | null>(null)
   const [isDragging, setIsDragging] = useState(false)
-
-  // 拖曳感測器：需移動 8px 才觸發拖曳（防止誤觸）
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  )
 
   /** 按下滑鼠：記錄起始小時，準備長按拖曳選取範圍 */
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -91,23 +106,6 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
     onRefresh()
   }
 
-  /** 拖曳結束：計算位移的小時數並更新時間塊時間 */
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, delta } = event
-    const block = blocks.find((b) => b.id === active.id)
-    if (!block || Math.abs(delta.y) < 5) return  // 忽略微小位移
-
-    const deltaMs = (delta.y / HOUR_HEIGHT) * 3600000
-    const newStart = new Date(new Date(block.start_time).getTime() + deltaMs)
-    const newEnd = new Date(new Date(block.end_time).getTime() + deltaMs)
-
-    await updateBlock(String(active.id), {
-      start_time: newStart.toISOString(),
-      end_time: newEnd.toISOString(),
-    })
-    onRefresh()
-  }
-
   /** 刪除時間塊 */
   const handleDelete = async (id: string) => {
     await deleteBlock(id)
@@ -116,51 +114,41 @@ export default function TimeAxis({ date, blocks, onRefresh }: TimeAxisProps) {
 
   return (
     <>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        {/* 時間軸容器：使用 pointer events 取代 onClick 以支援長按拖曳選取 */}
-        <div
-          className="relative select-none"
-          style={{ height: HOUR_HEIGHT * 24 }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-        >
-          {/* 小時格線與標籤 */}
-          {HOURS.map((h) => (
-            <div
-              key={h}
-              className="absolute w-full border-t border-gray-100"
-              style={{ top: h * HOUR_HEIGHT, height: HOUR_HEIGHT }}
-            >
-              <span className="absolute left-2 -top-2 text-xs text-gray-400 w-10 text-right">
-                {String(h).padStart(2, '0')}:00
-              </span>
-            </div>
-          ))}
+      {/* 時間軸容器：使用 pointer events 取代 onClick 以支援長按拖曳選取 */}
+      <div
+        className="relative select-none"
+        style={{ height: HOUR_HEIGHT * 24 }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {/* 小時格線與標籤（含 droppable 支援習慣拖入） */}
+        {HOURS.map((h) => (
+          <HourSlot key={h} hour={h} />
+        ))}
 
-          {/* 時間塊列表 */}
-          {blocks.map((block) => (
-            <BlockCard
-              key={block.id}
-              block={block}
-              topPx={timeToTopPx(block.start_time)}
-              heightPx={durationToHeightPx(block.start_time, block.end_time)}
-              onDelete={handleDelete}
-            />
-          ))}
+        {/* 時間塊列表 */}
+        {blocks.map((block) => (
+          <BlockCard
+            key={block.id}
+            block={block}
+            topPx={timeToTopPx(block.start_time)}
+            heightPx={durationToHeightPx(block.start_time, block.end_time)}
+            onDelete={handleDelete}
+          />
+        ))}
 
-          {/* 拖曳預覽 ghost block：顯示目前選取的時間範圍 */}
-          {isDragging && dragStart !== null && dragEnd !== null && (
-            <div
-              className="absolute left-14 right-2 rounded-lg bg-indigo-300/60 border-2 border-dashed border-indigo-500 pointer-events-none z-20"
-              style={{
-                top: Math.min(dragStart, dragEnd) * HOUR_HEIGHT,
-                height: (Math.abs(dragEnd - dragStart) + 1) * HOUR_HEIGHT,
-              }}
-            />
-          )}
-        </div>
-      </DndContext>
+        {/* 拖曳預覽 ghost block：顯示目前選取的時間範圍 */}
+        {isDragging && dragStart !== null && dragEnd !== null && (
+          <div
+            className="absolute left-14 right-2 rounded-lg bg-indigo-300/60 border-2 border-dashed border-indigo-500 pointer-events-none z-20"
+            style={{
+              top: Math.min(dragStart, dragEnd) * HOUR_HEIGHT,
+              height: (Math.abs(dragEnd - dragStart) + 1) * HOUR_HEIGHT,
+            }}
+          />
+        )}
+      </div>
 
       {/* 新增時間塊 Modal */}
       {showModal && (
