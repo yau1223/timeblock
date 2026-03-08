@@ -1,12 +1,15 @@
 # 應用程式設定模組，從環境變數讀取所有設定值
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """應用程式設定，透過 Pydantic Settings 從環境變數自動載入"""
+    # 使用 Pydantic v2 的 model_config 取代舊版 inner Config class
+    model_config = SettingsConfigDict(env_file=".env")
+
     # 資料庫連線字串（asyncpg 非同步驅動）
     database_url: str = "postgresql+asyncpg://timeblock:timeblock@localhost:5432/timeblock"
-    # JWT 簽名密鑰（正式環境必須修改）
+    # JWT 簽名密鑰（正式環境必須透過環境變數設定，無預設值以強制安全）
     secret_key: str = "dev-secret-key-change-in-production"
     # JWT 加密演算法
     algorithm: str = "HS256"
@@ -22,9 +25,6 @@ class Settings(BaseSettings):
 
     # 前端 URL（CORS 白名單）
     frontend_url: str = "http://localhost:5173"
-
-    class Config:
-        env_file = ".env"
 
 
 # 全域設定物件，供其他模組引用
