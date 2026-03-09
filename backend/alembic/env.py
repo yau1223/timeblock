@@ -12,7 +12,7 @@ from app.config import settings
 
 # 載入所有 ORM 模型以讓 Alembic 能自動偵測
 from app.database import Base
-from app.models import User, Category, Habit, HabitLog, TimeBlock  # noqa: F401
+from app.models import User, Category, Habit, HabitLog, TimeBlock, Template, Routine  # noqa: F401
 
 # Alembic 設定物件
 config = context.config

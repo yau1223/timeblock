@@ -31,3 +31,5 @@ class User(Base):
     categories: Mapped[list["Category"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     # 範本關聯，使用者刪除時一併刪除所有範本
     templates: Mapped[list["Template"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    # 例行事項關聯
+    routines: Mapped[list["Routine"]] = relationship(back_populates="user", cascade="all, delete-orphan")
