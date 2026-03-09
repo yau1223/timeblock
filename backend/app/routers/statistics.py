@@ -62,15 +62,16 @@ async def time_distribution(
     """
     start, end = _date_range(range, date)
     # 將日期邊界轉換為 UTC aware datetime 以匹配資料庫欄位型別
+    # 使用半開區間 [start_dt, end_dt)，避免 23:59:59 之後的微秒資料遺漏
     start_dt = datetime.combine(start, time(0, 0), tzinfo=timezone.utc)
-    end_dt = datetime.combine(end, time(23, 59, 59), tzinfo=timezone.utc)
+    end_dt = datetime.combine(end + timedelta(days=1), time(0, 0), tzinfo=timezone.utc)
 
     result = await db.execute(
         select(TimeBlock).where(
             and_(
                 TimeBlock.user_id == current_user.id,
                 TimeBlock.start_time >= start_dt,
-                TimeBlock.end_time <= end_dt,
+                TimeBlock.end_time < end_dt,
             )
         )
     )
