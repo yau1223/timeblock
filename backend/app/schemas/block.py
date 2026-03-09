@@ -51,6 +51,8 @@ class TimeBlockResponse(BaseModel):
     is_recurring: bool
     recur_rule: str | None
     habit_id: uuid.UUID | None
+    # 來源類型（habit / routine / None）
+    source_type: str | None = None
     # 完成時間（None 表示尚未完成）
     completed_at: datetime | None = None
 
