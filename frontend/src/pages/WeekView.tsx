@@ -43,7 +43,9 @@ export default function WeekView() {
         <Link to="/week" className="font-bold text-indigo-600 border-b-2 border-indigo-600 pb-1">週</Link>
         <Link to="/month" className="text-gray-500 hover:text-gray-900">月</Link>
         <Link to="/habits" className="text-gray-500 hover:text-gray-900">習慣</Link>
+        <Link to="/routines" className="text-gray-500 hover:text-gray-900">例行</Link>
         <Link to="/templates" className="text-gray-500 hover:text-gray-900">範本</Link>
+        <Link to="/statistics" className="text-gray-500 hover:text-gray-900">統計</Link>
       </nav>
 
       {/* 週切換標頭 */}

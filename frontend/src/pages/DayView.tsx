@@ -12,6 +12,7 @@ import { getBlocksByDate, createBlock, updateBlock } from '../api/blocks'
 import type { TimeBlock } from '../api/blocks'
 import { getHabits, createHabit } from '../api/habits'
 import type { Habit } from '../api/habits'
+import { autoGenerateRoutines } from '../api/routines'
 
 /** 日視圖：顯示單日 24 小時時間塊，含習慣側邊欄並排佈局 */
 export default function DayView() {
@@ -59,10 +60,19 @@ export default function DayView() {
     }
   }, [])
 
+  /** 觸發今日例行事項自動生成（冪等，不影響現有時間塊） */
+  const triggerAutoGenerate = useCallback(async () => {
+    try {
+      await autoGenerateRoutines(dateStr)
+    } catch {
+      // 自動生成失敗不阻礙頁面載入
+    }
+  }, [dateStr])
+
   useEffect(() => {
-    refresh()
+    triggerAutoGenerate().then(() => refresh())
     refreshHabits()
-  }, [refresh, refreshHabits])
+  }, [triggerAutoGenerate, refresh, refreshHabits])
 
   // dnd-kit 拖曳感測器：需移動 8px 才觸發（防止誤觸）
   const sensors = useSensors(
@@ -136,7 +146,9 @@ export default function DayView() {
         <Link to="/week" className="text-gray-500 hover:text-gray-900">週</Link>
         <Link to="/month" className="text-gray-500 hover:text-gray-900">月</Link>
         <Link to="/habits" className="text-gray-500 hover:text-gray-900">習慣</Link>
+        <Link to="/routines" className="text-gray-500 hover:text-gray-900">例行</Link>
         <Link to="/templates" className="text-gray-500 hover:text-gray-900">範本</Link>
+        <Link to="/statistics" className="text-gray-500 hover:text-gray-900">統計</Link>
       </nav>
 
       {/* 日期切換標頭 */}
