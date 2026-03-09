@@ -13,7 +13,7 @@ class Routine(Base):
     # 主鍵
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     # 所屬使用者
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     # 例行事項名稱（例：吃午飯、上班）
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     # 圖示識別碼（選填）
