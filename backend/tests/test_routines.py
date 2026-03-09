@@ -85,3 +85,30 @@ async def test_auto_generate_idempotent(client: AsyncClient, auth_headers: dict)
     await client.get("/api/routines/auto-generate", params={"target_date": "2026-03-10"}, headers=auth_headers)
     res2 = await client.get("/api/routines/auto-generate", params={"target_date": "2026-03-10"}, headers=auth_headers)
     assert res2.json()["generated"] == 0
+
+
+@pytest.mark.asyncio
+async def test_apply_routine_creates_block(client: AsyncClient, auth_headers: dict):
+    """手動套用例行事項應建立時間塊，回傳 201"""
+    create_res = await client.post("/api/routines/", json=ROUTINE_PAYLOAD, headers=auth_headers)
+    routine_id = create_res.json()["id"]
+
+    res = await client.post(
+        f"/api/routines/{routine_id}/apply",
+        params={"target_date": "2026-03-09"},
+        headers=auth_headers,
+    )
+    assert res.status_code == 201
+    assert res.json()["created"] is True
+
+
+@pytest.mark.asyncio
+async def test_apply_routine_idempotent(client: AsyncClient, auth_headers: dict):
+    """重複套用同一例行事項到同一天應跳過（冪等），回傳 200"""
+    create_res = await client.post("/api/routines/", json=ROUTINE_PAYLOAD, headers=auth_headers)
+    routine_id = create_res.json()["id"]
+
+    await client.post(f"/api/routines/{routine_id}/apply", params={"target_date": "2026-03-11"}, headers=auth_headers)
+    res2 = await client.post(f"/api/routines/{routine_id}/apply", params={"target_date": "2026-03-11"}, headers=auth_headers)
+    assert res2.status_code == 200
+    assert res2.json()["created"] is False

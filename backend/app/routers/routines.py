@@ -1,7 +1,7 @@
 # 例行事項路由：CRUD、手動套用到日期、自動生成今日時間塊
 import uuid
-from datetime import date, datetime, time, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from datetime import date, datetime, time, timezone, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from app.database import get_db
@@ -16,12 +16,9 @@ router = APIRouter(prefix="/api/routines", tags=["routines"])
 
 def _routine_to_block(routine: Routine, user_id: uuid.UUID, target_date: date) -> TimeBlock:
     """將例行事項轉換為指定日期的 TimeBlock 物件（不含 DB 操作）"""
-    # 計算結束時間（處理跨小時）
-    total_minutes = routine.start_time.hour * 60 + routine.start_time.minute + routine.duration
-    end_hour = (total_minutes // 60) % 24
-    end_minute = total_minutes % 60
     start_dt = datetime.combine(target_date, routine.start_time, tzinfo=timezone.utc)
-    end_dt = datetime.combine(target_date, time(end_hour, end_minute), tzinfo=timezone.utc)
+    # 使用 timedelta 計算結束時間，正確處理跨午夜情況
+    end_dt = start_dt + timedelta(minutes=routine.duration)
     return TimeBlock(
         user_id=user_id,
         title=routine.title,
@@ -50,11 +47,11 @@ async def auto_generate(
     )
     routines = result.scalars().all()
 
-    # 取出當日已存在的 routine 時間塊標題集合
+    # 取出當日已存在的 routine 時間塊，用 (title, 小時, 分鐘) 作為唯一鍵
     day_start = datetime.combine(target_date, time(0, 0), tzinfo=timezone.utc)
     day_end = datetime.combine(target_date, time(23, 59, 59), tzinfo=timezone.utc)
     existing_result = await db.execute(
-        select(TimeBlock.title).where(
+        select(TimeBlock.title, TimeBlock.start_time).where(
             and_(
                 TimeBlock.user_id == current_user.id,
                 TimeBlock.source_type == "routine",
@@ -63,7 +60,8 @@ async def auto_generate(
             )
         )
     )
-    existing_titles = {row[0] for row in existing_result.all()}
+    # 以 (title, 小時, 分鐘) 組合避免同名但不同時間的例行事項互相衝突
+    existing_keys = {(row[0], row[1].hour, row[1].minute) for row in existing_result.all()}
 
     # 判斷今日是否為例行事項的重複星期（0=週日 ...6=週六）
     # Python isoweekday: 1=Mon, 7=Sun → 轉成 0=Sun, 1=Mon...6=Sat
@@ -73,7 +71,9 @@ async def auto_generate(
         days = routine.days_of_week or []
         if days and weekday not in days:
             continue  # 今日不在重複星期內
-        if routine.title in existing_titles:
+        # 以 (title, 小時, 分鐘) 組合判斷是否已存在
+        routine_key = (routine.title, routine.start_time.hour, routine.start_time.minute)
+        if routine_key in existing_keys:
             continue  # 已存在，跳過
         block = _routine_to_block(routine, current_user.id, target_date)
         db.add(block)
@@ -161,7 +161,7 @@ async def delete_routine(
     await db.commit()
 
 
-@router.post("/{routine_id}/apply", status_code=status.HTTP_201_CREATED)
+@router.post("/{routine_id}/apply")
 async def apply_routine(
     routine_id: uuid.UUID,
     target_date: date = Query(...),
@@ -180,10 +180,14 @@ async def apply_routine(
     if not routine:
         raise HTTPException(status_code=404, detail="例行事項不存在")
 
-    # 冪等保護：檢查當日是否已存在
+    # 冪等保護：以 (title, 小時, 分鐘) 組合檢查當日是否已存在
     day_start = datetime.combine(target_date, time(0, 0), tzinfo=timezone.utc)
     day_end = datetime.combine(target_date, time(23, 59, 59), tzinfo=timezone.utc)
-    existing = await db.execute(
+    start_hour = routine.start_time.hour
+    start_minute = routine.start_time.minute
+
+    # 取得當日同標題的所有候選，Python 端過濾小時分鐘精確比對
+    existing_result = await db.execute(
         select(TimeBlock).where(
             and_(
                 TimeBlock.user_id == current_user.id,
@@ -194,10 +198,21 @@ async def apply_routine(
             )
         )
     )
-    if existing.scalar_one_or_none():
+    candidates = existing_result.scalars().all()
+    is_duplicate = any(
+        b.start_time.hour == start_hour and b.start_time.minute == start_minute
+        for b in candidates
+    )
+    if is_duplicate:
+        # 已存在時回傳 200，表示冪等成功但未建立新資源
         return {"created": False, "message": "當日已存在此例行事項時間塊"}
 
     block = _routine_to_block(routine, current_user.id, target_date)
     db.add(block)
     await db.commit()
-    return {"created": True}
+    # 建立成功時明確回傳 201
+    return Response(
+        content='{"created": true}',
+        status_code=201,
+        media_type="application/json",
+    )
