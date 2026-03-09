@@ -1,6 +1,6 @@
 # 例行事項路由：CRUD、手動套用到日期、自動生成今日時間塊
 import uuid
-from datetime import date, datetime, time, timezone, timedelta
+from datetime import date, datetime, time, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -16,7 +16,9 @@ router = APIRouter(prefix="/api/routines", tags=["routines"])
 
 def _routine_to_block(routine: Routine, user_id: uuid.UUID, target_date: date) -> TimeBlock:
     """將例行事項轉換為指定日期的 TimeBlock 物件（不含 DB 操作）"""
-    start_dt = datetime.combine(target_date, routine.start_time, tzinfo=timezone.utc)
+    # 使用 naive datetime（不帶時區），與手動建立的時間塊行為一致
+    # 前端以本地時區解析後再轉 UTC 送入，故後端統一儲存不帶 tz 的本地時間
+    start_dt = datetime.combine(target_date, routine.start_time)
     # 使用 timedelta 計算結束時間，正確處理跨午夜情況
     end_dt = start_dt + timedelta(minutes=routine.duration)
     return TimeBlock(
@@ -48,8 +50,9 @@ async def auto_generate(
     routines = result.scalars().all()
 
     # 取出當日已存在的 routine 時間塊，用 (title, 小時, 分鐘) 作為唯一鍵
-    day_start = datetime.combine(target_date, time(0, 0), tzinfo=timezone.utc)
-    day_end = datetime.combine(target_date, time(23, 59, 59), tzinfo=timezone.utc)
+    # 使用 naive datetime 與儲存的本地時間一致
+    day_start = datetime.combine(target_date, time(0, 0))
+    day_end = datetime.combine(target_date, time(23, 59, 59))
     existing_result = await db.execute(
         select(TimeBlock.title, TimeBlock.start_time).where(
             and_(
@@ -181,8 +184,9 @@ async def apply_routine(
         raise HTTPException(status_code=404, detail="例行事項不存在")
 
     # 冪等保護：以 (title, 小時, 分鐘) 組合檢查當日是否已存在
-    day_start = datetime.combine(target_date, time(0, 0), tzinfo=timezone.utc)
-    day_end = datetime.combine(target_date, time(23, 59, 59), tzinfo=timezone.utc)
+    # 使用 naive datetime 與儲存的本地時間一致
+    day_start = datetime.combine(target_date, time(0, 0))
+    day_end = datetime.combine(target_date, time(23, 59, 59))
     start_hour = routine.start_time.hour
     start_minute = routine.start_time.minute
 
