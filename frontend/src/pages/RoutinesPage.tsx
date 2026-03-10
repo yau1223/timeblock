@@ -76,6 +76,8 @@ export default function RoutinesPage() {
       }
       setShowModal(false)
       refresh()
+    } catch (err) {
+      console.error('儲存例行事項失敗', err)
     } finally {
       setLoading(false)
     }
@@ -84,16 +86,24 @@ export default function RoutinesPage() {
   /** 刪除例行事項 */
   const handleDelete = async (id: string) => {
     if (!confirm('確定刪除此例行事項？')) return
-    await deleteRoutine(id)
-    refresh()
+    try {
+      await deleteRoutine(id)
+      refresh()
+    } catch (err) {
+      console.error('刪除例行事項失敗', err)
+    }
   }
 
   /** 手動套用到今日 */
   const handleApply = async (id: string) => {
     const today = format(new Date(), 'yyyy-MM-dd')
-    await applyRoutine(id, today)
-    setAppliedId(id)
-    setTimeout(() => setAppliedId(null), 2000)
+    try {
+      await applyRoutine(id, today)
+      setAppliedId(id)
+      setTimeout(() => setAppliedId(null), 2000)
+    } catch (err) {
+      console.error('套用例行事項失敗', err)
+    }
   }
 
   /** 切換重複星期 */

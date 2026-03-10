@@ -18,8 +18,12 @@ export default function TemplatesPage() {
 
   /** 重新載入範本列表 */
   const refresh = async () => {
-    const data = await getTemplates()
-    setTemplates(data)
+    try {
+      const data = await getTemplates()
+      setTemplates(data)
+    } catch (err) {
+      console.error('載入範本失敗', err)
+    }
   }
 
   useEffect(() => { refresh() }, [])
@@ -45,6 +49,8 @@ export default function TemplatesPage() {
       setTemplateName('')
       setShowSaveModal(false)
       refresh()
+    } catch (err) {
+      console.error('另存範本失敗', err)
     } finally {
       setLoading(false)
     }
@@ -69,6 +75,8 @@ export default function TemplatesPage() {
       }))
       setApplyingId(null)
       alert(`已套用「${template.name}」到 ${targetDate}`)
+    } catch (err) {
+      console.error('套用範本失敗', err)
     } finally {
       setLoading(false)
     }
@@ -77,8 +85,12 @@ export default function TemplatesPage() {
   /** 刪除範本 */
   const handleDelete = async (id: string) => {
     if (!confirm('確定刪除此範本？')) return
-    await deleteTemplate(id)
-    refresh()
+    try {
+      await deleteTemplate(id)
+      refresh()
+    } catch (err) {
+      console.error('刪除範本失敗', err)
+    }
   }
 
   return (

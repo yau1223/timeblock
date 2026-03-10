@@ -33,6 +33,8 @@ export default function MonthView() {
       const map: Record<string, TimeBlock[]> = {}
       results.forEach(({ dateStr, blocks }) => { map[dateStr] = blocks })
       setMonthBlocks(map)
+    }).catch((err) => {
+      console.error('載入月資料失敗', err)
     })
   }, [month])
 

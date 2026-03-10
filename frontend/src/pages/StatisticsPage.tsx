@@ -60,9 +60,13 @@ export default function StatisticsPage() {
       return
     }
     setSelectedHabit(habit)
-    const year = new Date(baseDate).getFullYear()
-    const data = await getHabitHeatmap(habit.habit_id, year)
-    setHeatmap(data)
+    try {
+      const year = new Date(baseDate).getFullYear()
+      const data = await getHabitHeatmap(habit.habit_id, year)
+      setHeatmap(data)
+    } catch (err) {
+      console.error('載入熱力圖失敗', err)
+    }
   }
 
   /** 產生熱力圖格狀週數據 */

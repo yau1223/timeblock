@@ -49,6 +49,8 @@ export default function HabitsPage() {
       setNewTitle('')
       setShowAdd(false)
       refresh()
+    } catch (err) {
+      console.error('新增習慣失敗', err)
     } finally {
       setLoading(false)
     }

@@ -32,6 +32,8 @@ export default function WeekView() {
       const map: Record<string, TimeBlock[]> = {}
       results.forEach(({ dateStr, blocks }) => { map[dateStr] = blocks })
       setWeekBlocks(map)
+    }).catch((err) => {
+      console.error('載入週資料失敗', err)
     })
   }, [weekStart])
 
