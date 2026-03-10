@@ -24,7 +24,7 @@ vi.mock('../store/authStore', () => ({
     selector({ setAuth: vi.fn() }),
 }))
 
-import { login, register, getMe } from '../api/auth'
+import { login, getMe } from '../api/auth'
 
 /** 渲染含路由的 LoginPage */
 const renderPage = () =>
@@ -62,7 +62,7 @@ describe('LoginPage', () => {
   })
 
   test('登入成功後導向 /day', async () => {
-    vi.mocked(login).mockResolvedValue({ access_token: 'test-token' })
+    vi.mocked(login).mockResolvedValue({ access_token: 'test-token', token_type: 'bearer' })
     vi.mocked(getMe).mockResolvedValue({
       id: 'u-1',
       email: 'user@test.com',

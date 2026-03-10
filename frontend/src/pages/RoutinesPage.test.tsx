@@ -126,7 +126,7 @@ describe('RoutinesPage', () => {
 
   it('點擊「套用今日」按鈕呼叫 applyRoutine', async () => {
     vi.mocked(api.getRoutines).mockResolvedValue([makeRoutine('r-1', '晨跑')])
-    vi.mocked(api.applyRoutine).mockResolvedValue({ count: 1 })
+    vi.mocked(api.applyRoutine).mockResolvedValue({ created: true })
 
     render(<MemoryRouter><RoutinesPage /></MemoryRouter>)
     await waitFor(() => screen.getByText('晨跑'))

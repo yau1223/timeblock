@@ -29,6 +29,7 @@ const makeBlock = (id: string) => ({
   end_time: '2026-03-10T10:00:00.000Z',
   color: '#6366f1',
   completed_at: null,
+  is_recurring: false,
 })
 
 describe('TimeAxis', () => {
