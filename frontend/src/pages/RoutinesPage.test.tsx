@@ -41,23 +41,26 @@ describe('RoutinesPage', () => {
   it('點擊新增按鈕開啟 Modal', async () => {
     vi.mocked(api.getRoutines).mockResolvedValue([])
     render(<MemoryRouter><RoutinesPage /></MemoryRouter>)
-    // 等待頁面載入完成後再點擊按鈕
-    await waitFor(() => screen.getByRole('button', { name: /新增/ }))
-    fireEvent.click(screen.getByRole('button', { name: /新增/ }))
+    // 等待頁面載入完成後再點擊 Topbar 新增按鈕（使用 getAllByRole 取第一個，即 Topbar 按鈕）
+    await waitFor(() => screen.getAllByRole('button', { name: /新增例行事項/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: /新增例行事項/ })[0])
     await waitFor(() => {
-      expect(screen.getByText('新增例行事項')).toBeInTheDocument()
+      // Modal 標題應出現在畫面上
+      expect(screen.getAllByText('新增例行事項').length).toBeGreaterThanOrEqual(2)
     })
   })
 
   it('點擊取消關閉 Modal', async () => {
     vi.mocked(api.getRoutines).mockResolvedValue([])
     render(<MemoryRouter><RoutinesPage /></MemoryRouter>)
-    await waitFor(() => screen.getByRole('button', { name: /新增/ }))
-    fireEvent.click(screen.getByRole('button', { name: /新增/ }))
+    // 點擊 Topbar 新增按鈕（取第一個）
+    await waitFor(() => screen.getAllByRole('button', { name: /新增例行事項/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: /新增例行事項/ })[0])
     await waitFor(() => screen.getByText('取消'))
     fireEvent.click(screen.getByText('取消'))
     await waitFor(() => {
-      expect(screen.queryByText('新增例行事項')).not.toBeInTheDocument()
+      // Modal 關閉後只剩 Topbar 按鈕，標題文字只剩一個
+      expect(screen.getAllByText('新增例行事項').length).toBe(1)
     })
   })
 })

@@ -1,11 +1,12 @@
 // 例行事項管理頁面：列出、新增、編輯、刪除例行事項
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import {
   getRoutines, createRoutine, updateRoutine, deleteRoutine, applyRoutine,
   type Routine, type RoutineCreate,
 } from '../api/routines'
+import Topbar from '../components/layout/Topbar'
 
 /** 星期標籤：0=日, 1=一 ... 6=六 */
 const DAY_LABELS = ['日', '一', '二', '三', '四', '五', '六']
@@ -106,58 +107,55 @@ export default function RoutinesPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      {/* 導覽列 */}
-      <nav className="flex gap-4 mb-4 text-sm border-b pb-3">
-        <Link to="/day" className="text-gray-500 hover:text-gray-900">日</Link>
-        <Link to="/week" className="text-gray-500 hover:text-gray-900">週</Link>
-        <Link to="/month" className="text-gray-500 hover:text-gray-900">月</Link>
-        <Link to="/habits" className="text-gray-500 hover:text-gray-900">習慣</Link>
-        <Link to="/routines" className="font-bold text-amber-600 border-b-2 border-amber-600 pb-1">例行</Link>
-        <Link to="/templates" className="text-gray-500 hover:text-gray-900">範本</Link>
-        <Link to="/statistics" className="text-gray-500 hover:text-gray-900">統計</Link>
-      </nav>
+    <div className="flex flex-col h-full">
+      {/* 頂部操作欄：標題與新增按鈕 */}
+      <Topbar
+        left={<h1 className="font-semibold text-xl text-gray-900">例行事項</h1>}
+        right={
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-1.5 bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 transition-colors"
+          >
+            <Plus size={16} /> 新增例行事項
+          </button>
+        }
+      />
 
-      {/* 標頭 */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="font-bold text-lg">例行事項</h2>
-        <button onClick={handleOpenAdd} className="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600">
-          + 新增
-        </button>
+      {/* 主內容區 */}
+      <div className="px-6 py-4">
+        {/* 列表 */}
+        {routines.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-12">尚無例行事項，點擊「新增」開始建立</p>
+        ) : (
+          <ul className="space-y-3">
+            {routines.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
+                <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: r.color }} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{r.title}</p>
+                  <p className="text-xs text-gray-400">
+                    {r.start_time.slice(0, 5)} · {r.duration} 分鐘 ·{' '}
+                    {r.days_of_week.length === 0
+                      ? '每天'
+                      : r.days_of_week.map((d) => `週${DAY_LABELS[d]}`).join('、')}
+                    {r.auto_generate && <span className="ml-1 text-amber-500">自動</span>}
+                  </p>
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => handleApply(r.id)}
+                    className="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  >
+                    {appliedId === r.id ? '✓' : '套用今日'}
+                  </button>
+                  <button onClick={() => handleOpenEdit(r)} className="p-1 text-gray-400 hover:text-gray-700 text-xs">✎</button>
+                  <button onClick={() => handleDelete(r.id)} className="p-1 text-gray-400 hover:text-red-500 text-xs">✕</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-
-      {/* 列表 */}
-      {routines.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-12">尚無例行事項，點擊「新增」開始建立</p>
-      ) : (
-        <ul className="space-y-3">
-          {routines.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm">
-              <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: r.color }} />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{r.title}</p>
-                <p className="text-xs text-gray-400">
-                  {r.start_time.slice(0, 5)} · {r.duration} 分鐘 ·{' '}
-                  {r.days_of_week.length === 0
-                    ? '每天'
-                    : r.days_of_week.map((d) => `週${DAY_LABELS[d]}`).join('、')}
-                  {r.auto_generate && <span className="ml-1 text-amber-500">自動</span>}
-                </p>
-              </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => handleApply(r.id)}
-                  className="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100"
-                >
-                  {appliedId === r.id ? '✓' : '套用今日'}
-                </button>
-                <button onClick={() => handleOpenEdit(r)} className="p-1 text-gray-400 hover:text-gray-700 text-xs">✎</button>
-                <button onClick={() => handleDelete(r.id)} className="p-1 text-gray-400 hover:text-red-500 text-xs">✕</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {/* 新增/編輯 Modal */}
       {showModal && (

@@ -138,14 +138,13 @@ describe('TemplatesPage', () => {
     expect(screen.getByRole('button', { name: '取消' })).toBeInTheDocument()
   })
 
-  test('導覽列包含所有連結', async () => {
+  test('Topbar 顯示頁面標題與操作按鈕', async () => {
     renderPage()
     await waitFor(() => screen.getByText('還沒有範本'))
 
-    expect(screen.getByRole('link', { name: '日' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '週' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '月' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '習慣' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '範本' })).toBeInTheDocument()
+    // 驗證 Topbar 標題
+    expect(screen.getByRole('heading', { name: '範本庫' })).toBeInTheDocument()
+    // 驗證 Topbar 右側「從今日另存」按鈕存在
+    expect(screen.getByText('+ 從今日另存')).toBeInTheDocument()
   })
 })
