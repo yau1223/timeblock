@@ -66,8 +66,8 @@ export default function DayView() {
   const triggerAutoGenerate = useCallback(async () => {
     try {
       await autoGenerateRoutines(dateStr)
-    } catch {
-      // 自動生成失敗不阻礙頁面載入
+    } catch (err) {
+      console.error('自動生成例行事項失敗', err)
     }
   }, [dateStr])
 
