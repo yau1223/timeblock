@@ -39,7 +39,7 @@ describe('HabitSidebar', () => {
   test('calls onAddHabit when button clicked', () => {
     const onAddHabit = vi.fn()
     render(<HabitSidebar habits={[]} onAddHabit={onAddHabit} />)
-    fireEvent.click(screen.getByText('+ 新增習慣'))
+    fireEvent.click(screen.getByRole('button', { name: /新增習慣/ }))
     expect(onAddHabit).toHaveBeenCalledTimes(1)
   })
 })
