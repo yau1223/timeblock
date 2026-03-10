@@ -38,7 +38,7 @@ export default function BlockCard({ block, topPx, heightPx, onDelete, onRefresh 
   }
 
   // 拖曳時套用 transform 位移
-  const style = transform
+  const dragStyle = transform
     ? { transform: `translate(${transform.x}px, ${transform.y}px)` }
     : undefined
 
@@ -49,19 +49,20 @@ export default function BlockCard({ block, topPx, heightPx, onDelete, onRefresh 
       style={{
         top: topPx,
         height: heightPx,
-        backgroundColor: block.color,
-        ...style,
+        borderLeft: `3px solid ${block.color}`,       // 左側習慣顏色色條
+        backgroundColor: `${block.color}18`,           // 習慣色 10% 透明度背景
+        ...dragStyle,
       }}
-      className="absolute left-14 right-2 rounded-lg px-2 py-1 text-white text-xs cursor-grab active:cursor-grabbing overflow-hidden select-none shadow-sm z-10"
+      className="absolute left-14 right-2 rounded-lg px-2 py-1 text-xs cursor-grab active:cursor-grabbing overflow-hidden select-none shadow-sm z-10 hover:shadow-md hover:scale-[1.01] transition-all duration-150"
       {...listeners}
       {...attributes}
     >
       {/* 時間塊標題 */}
-      <div className="font-semibold truncate pr-4">{block.title}</div>
+      <div className="font-semibold truncate pr-4 text-gray-800">{block.title}</div>
       {/* 高度足夠時顯示專注計時器或完成標記 */}
       {heightPx > 48 && (
         block.completed_at
-          ? <span className="text-xs text-white/70">✓ 已完成</span>
+          ? <span className="text-xs text-gray-500">✓ 已完成</span>
           : <FocusTimer endTime={block.end_time} onComplete={handleComplete} />
       )}
       {/* 刪除按鈕 */}
@@ -70,7 +71,7 @@ export default function BlockCard({ block, topPx, heightPx, onDelete, onRefresh 
           e.stopPropagation()
           onDelete(block.id)
         }}
-        className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center opacity-70 hover:opacity-100 text-white"
+        className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center opacity-60 hover:opacity-100 text-gray-700"
         aria-label="刪除時間塊"
       >
         ×
