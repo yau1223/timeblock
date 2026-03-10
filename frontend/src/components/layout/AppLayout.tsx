@@ -1,9 +1,10 @@
 // src/components/layout/AppLayout.tsx
 // 應用程式主佈局：固定 Sidebar + 主內容區
+import type { ReactNode } from 'react'
 import Sidebar from './Sidebar'
 
 interface AppLayoutProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 /** 主佈局框架：左側固定 Sidebar + 右側主內容 */

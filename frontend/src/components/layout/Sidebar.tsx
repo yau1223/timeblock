@@ -1,5 +1,6 @@
 // src/components/layout/Sidebar.tsx
 // 全域左側導覽欄，深 indigo 背景，包含 Logo、頁面導覽、使用者資訊
+import type { ElementType } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   CalendarDays, CalendarRange, Calendar, CheckSquare,
@@ -12,7 +13,7 @@ function NavItem({
   to, icon: Icon, label
 }: {
   to: string
-  icon: React.ElementType
+  icon: ElementType
   label: string
 }) {
   return (
