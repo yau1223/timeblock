@@ -1,13 +1,15 @@
 // 日視圖頁面：24 小時時間軸，支援日期切換、習慣拖入、並排佈局
 import { useEffect, useState, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { format, addDays, subDays } from 'date-fns'
 import { zhTW } from 'date-fns/locale'
 import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import TimeAxis from '../components/TimeAxis'
 import HabitSidebar from '../components/HabitSidebar'
 import DailyProgress from '../components/DailyProgress'
+import Topbar from '../components/layout/Topbar'
 import { getBlocksByDate, createBlock, updateBlock } from '../api/blocks'
 import type { TimeBlock } from '../api/blocks'
 import { getHabits, createHabit } from '../api/habits'
@@ -138,44 +140,54 @@ export default function DayView() {
     }
   }
 
-  return (
-    <div className="max-w-5xl mx-auto flex flex-col h-screen">
-      {/* 導覽列 */}
-      <nav className="flex gap-4 px-4 py-3 text-sm border-b bg-white sticky top-0 z-30">
-        <Link to="/day" className="font-bold text-indigo-600 border-b-2 border-indigo-600 pb-1">日</Link>
-        <Link to="/week" className="text-gray-500 hover:text-gray-900">週</Link>
-        <Link to="/month" className="text-gray-500 hover:text-gray-900">月</Link>
-        <Link to="/habits" className="text-gray-500 hover:text-gray-900">習慣</Link>
-        <Link to="/routines" className="text-gray-500 hover:text-gray-900">例行</Link>
-        <Link to="/templates" className="text-gray-500 hover:text-gray-900">範本</Link>
-        <Link to="/statistics" className="text-gray-500 hover:text-gray-900">統計</Link>
-      </nav>
-
-      {/* 日期切換標頭 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
-        <button
-          onClick={() => setCurrentDate((d) => subDays(d, 1))}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-          aria-label="前一天"
-        >
-          ‹
-        </button>
-        <div className="text-center">
-          <h2 className="font-bold text-lg">
-            {format(currentDate, 'M月d日', { locale: zhTW })}
-          </h2>
-          <p className="text-xs text-gray-400">
-            {format(currentDate, 'yyyy年 EEEE', { locale: zhTW })}
-          </p>
-        </div>
-        <button
-          onClick={() => setCurrentDate((d) => addDays(d, 1))}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-          aria-label="後一天"
-        >
-          ›
-        </button>
+  /* Topbar 左側：日期切換按鈕群組 */
+  const topbarLeft = (
+    <>
+      <button
+        onClick={() => setCurrentDate((d) => subDays(d, 1))}
+        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+        aria-label="前一天"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <div className="text-center">
+        <h1 className="font-semibold text-gray-900">
+          {format(currentDate, 'M月d日', { locale: zhTW })}
+        </h1>
+        <p className="text-xs text-gray-400">
+          {format(currentDate, 'yyyy年 EEEE', { locale: zhTW })}
+        </p>
       </div>
+      <button
+        onClick={() => setCurrentDate((d) => addDays(d, 1))}
+        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+        aria-label="後一天"
+      >
+        <ChevronRight size={18} />
+      </button>
+      <button
+        onClick={() => setCurrentDate(new Date())}
+        className="text-sm text-indigo-600 border border-indigo-200 rounded-lg px-3 py-1 hover:bg-indigo-50 transition-colors ml-2"
+      >
+        今天
+      </button>
+    </>
+  )
+
+  /* Topbar 右側：新增習慣 CTA 按鈕 */
+  const topbarRight = (
+    <button
+      onClick={() => setShowAddHabit(true)}
+      className="flex items-center gap-1.5 bg-indigo-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-indigo-700 transition-colors"
+    >
+      <Plus size={16} />
+      新增習慣
+    </button>
+  )
+
+  return (
+    <div className="flex flex-col h-full">
+      <Topbar left={topbarLeft} right={topbarRight} />
 
       {/* 主體：習慣側邊欄 + 時間軸（共用一個 DndContext） */}
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -197,7 +209,7 @@ export default function DayView() {
               </div>
             )}
             {!loading && !error && (
-              <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl bg-white shadow-sm m-2">
+              <div className="flex-1 overflow-y-auto m-4 bg-white rounded-xl shadow-sm border border-gray-100">
                 <TimeAxis date={dateStr} blocks={blocks} onRefresh={refresh} />
               </div>
             )}
@@ -208,16 +220,16 @@ export default function DayView() {
       {/* 新增習慣 Modal */}
       {showAddHabit && (
         <div
-          className="fixed inset-0 bg-black/30 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => { setShowAddHabit(false); setNewHabitTitle('') }}
         >
           <div
-            className="bg-white rounded-xl p-6 w-80 shadow-lg"
+            className="bg-white rounded-2xl p-6 w-96 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-bold text-lg mb-4">新增習慣</h3>
+            <h3 className="font-semibold text-lg mb-4 text-gray-900">新增習慣</h3>
             <input
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="習慣名稱（例如：晨跑、冥想）"
               value={newHabitTitle}
               onChange={(e) => setNewHabitTitle(e.target.value)}
@@ -227,13 +239,13 @@ export default function DayView() {
             <div className="flex gap-2">
               <button
                 onClick={handleAddHabit}
-                className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700"
+                className="flex-1 bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
               >
                 新增
               </button>
               <button
                 onClick={() => { setShowAddHabit(false); setNewHabitTitle('') }}
-                className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
+                className="flex-1 border border-gray-200 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 取消
               </button>
