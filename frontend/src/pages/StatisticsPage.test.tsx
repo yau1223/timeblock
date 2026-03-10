@@ -1,5 +1,5 @@
 // 統計頁面單元測試
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import StatisticsPage from './StatisticsPage'
@@ -74,6 +74,59 @@ describe('StatisticsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('時間分配')).toBeInTheDocument()
       expect(screen.getByText('習慣完成率')).toBeInTheDocument()
+    })
+  })
+
+  it('切換統計範圍（日/週/月）', async () => {
+    vi.mocked(api.getTimeDistribution).mockResolvedValue([])
+    vi.mocked(api.getHabitsCompletion).mockResolvedValue([])
+
+    render(<MemoryRouter><StatisticsPage /></MemoryRouter>)
+    await waitFor(() => screen.getByText('時間分配'))
+
+    // 點擊「日」切換
+    fireEvent.click(screen.getByText('日'))
+    await waitFor(() => {
+      expect(api.getTimeDistribution).toHaveBeenCalledWith('day', expect.any(String))
+    })
+
+    // 點擊「月」切換
+    fireEvent.click(screen.getByText('月'))
+    await waitFor(() => {
+      expect(api.getTimeDistribution).toHaveBeenCalledWith('month', expect.any(String))
+    })
+  })
+
+  it('點擊習慣項目載入熱力圖', async () => {
+    vi.mocked(api.getTimeDistribution).mockResolvedValue([])
+    vi.mocked(api.getHabitsCompletion).mockResolvedValue([{
+      habit_id: 'h-1',
+      title: '晨跑',
+      color: '#10b981',
+      completed: 5,
+      total: 7,
+      rate: 71.4,
+    }])
+    vi.mocked(api.getHabitHeatmap).mockResolvedValue({ '2026-03-01': true, '2026-03-02': false })
+
+    render(<MemoryRouter><StatisticsPage /></MemoryRouter>)
+    await waitFor(() => screen.getByText('晨跑'))
+
+    // 點擊習慣展開熱力圖
+    fireEvent.click(screen.getByText('晨跑').closest('li')!)
+
+    await waitFor(() => {
+      expect(api.getHabitHeatmap).toHaveBeenCalledWith('h-1', expect.any(Number))
+    })
+  })
+
+  it('無習慣資料時顯示空狀態', async () => {
+    vi.mocked(api.getTimeDistribution).mockResolvedValue([])
+    vi.mocked(api.getHabitsCompletion).mockResolvedValue([])
+
+    render(<MemoryRouter><StatisticsPage /></MemoryRouter>)
+    await waitFor(() => {
+      expect(screen.getByText('尚無習慣資料')).toBeInTheDocument()
     })
   })
 })
