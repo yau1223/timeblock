@@ -33,8 +33,12 @@ export default function BlockCard({ block, topPx, heightPx, onDelete, onRefresh 
 
   /** 標記時間塊為已完成，更新 completed_at */
   const handleComplete = async () => {
-    await updateBlock(block.id, { completed_at: new Date().toISOString() })
-    onRefresh?.()
+    try {
+      await updateBlock(block.id, { completed_at: new Date().toISOString() })
+      onRefresh?.()
+    } catch (err) {
+      console.error('標記完成失敗', err)
+    }
   }
 
   // 拖曳時套用 transform 位移
